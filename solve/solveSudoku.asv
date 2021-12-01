@@ -1,0 +1,53 @@
+function board = solveSudoku(board)
+%solveSudoku 求解数独程序
+%   此处提供详细说明
+map = board;
+line = zeros(9,9);
+column = zeros(9,9);
+block = zeros(3,3);
+block(:,:,2) = zeros(3,3);
+block(:,:,3) = zeros(3,3);
+spaces = [];
+valid = 0;
+solve(board)
+board = board;
+
+    function dfs(board,pos)
+        [~,n] = size(spaces);
+        if pos == n+1
+            valid = 1;
+            return
+        end
+        i = spaces(1,pos);
+        j = spaces(2,pos);
+        for k = 1:1:9
+            if line(i,k)==0 && column(j,k)==0 && block(ceil(i/3),ceil(j/3),k)
+                line(i,k)=1;
+                column(j,k)=1;
+                block(ceil(i/3),ceil(j/3),k)=1;
+                board(i,j) = k;
+                dfs(board,pos+1);
+                line(i,k)=0;
+                column(j,k)=0;
+                block(ceil(i/3),ceil(j/3),k)=0;     
+            end
+        end
+    end
+
+    function solve(board)
+        for i = 1:1:9
+            for j = 1:1:9
+                if board(i,j)<1 || board(i,j)>9
+                    index = [i;j];
+                    spaces = [spaces index];
+                else
+                    digit = board(i,j);
+                    line(i,digit)=1;
+                    column(j,digit)=1;
+                    block(ceil(i/3),ceil(j/3),digit)=1;
+                end
+            end
+        end
+        dfs(board,1);
+    end
+end
