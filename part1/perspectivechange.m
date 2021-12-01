@@ -39,25 +39,38 @@ function img = perspectivechange()
     node3=rot*[M 1 1]'/(g*M+h*1+1); 
     %变换后图像右下点
     node4=rot*[M N 1]'/(g*M+h*N+1); 
-
+    
+   
     height = round(max([node1(1) node2(1) node3(1) node4(1)])-min([node1(1) node2(1) node3(1) node4(1)]));     
     width = round(max([node1(2) node2(2) node3(2) node4(2)])-min([node1(2) node2(2) node3(2) node4(2)]));      
     imgn=zeros(height,width);
 
     delta_y = round(abs(min([node1(1) node2(1) node3(1) node4(1)])));            
     delta_x = round(abs(min([node1(2) node2(2) node3(2) node4(2)])));           
-    inv_rot = inv(rot);
 
     for i = 1-delta_y:height-delta_y  
         for j = 1-delta_x:width-delta_x
             pix = rot\[i j 1]';      
             pix = ([g*pix(1)-1 h*pix(1);g*pix(2) h*pix(2)-1])\[-pix(1) -pix(2)]';
-        
             if pix(1) >= 0.5 && pix(2) >= 0.5 && pix(1) <= M && pix(2) <= N
+                if round(pix(1)) == round(oldNode_x(1)) && round(pix(2)) == round(oldNode_y(1)) 
+                    x1 = j+delta_x;
+                    y1 = i+delta_y;
+                    disp(x1);
+                    disp(y1);
+                end 
+                if round(pix(1)) == round(oldNode_x(4)) && round(pix(2)) == round(oldNode_y(4)) 
+                    x2 = j+delta_x;
+                    y2 = i+delta_y;
+                    disp(x2);
+                    disp(y2);
+                end 
                 imgn(i+delta_y,j+delta_x)=img(round(pix(1)),round(pix(2))); 
             end  
         end
     end
+    
 img = uint8(imgn);
-%figure,imshow(img);title('透视转换');
+img = imcrop(img,[x1 - 5,y1-5,x2-x1+10,y2-y1+10]);
+%figure,imshow(img);
 end
