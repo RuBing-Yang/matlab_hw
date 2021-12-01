@@ -1,6 +1,7 @@
 function board = solveSudoku(map)
 %solveSudoku 求解数独程序
-%   此处提供详细说明
+%   输入map为一个9x9的矩阵，空白处以0填充
+%   输出为填充完整的矩阵
 board = map;
 line = zeros(9,9);
 column = zeros(9,9);
