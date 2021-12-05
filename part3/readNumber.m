@@ -1,13 +1,32 @@
 function readNumber()
     %% 加载训练和测试数据
     channelNum = 3;
+    selectNet = 3;
     if exist('train', 'dir') == 0
         loadTrainData(channelNum, 0);
     end
     if exist('test', 'dir') == 0
         loadTestData(channelNum, 0);
     end
-    trainVgg();
+    if selectNet == 1
+        if exist('myLenet.mat') == 0
+            trainLenet();
+        end
+        load ('myLenet.mat', 'myLenet');
+        testResult(myLenet)
+    elseif selectNet == 2
+        if exist('myGooglenet.mat') == 0
+            trainGooglenet();
+        end
+        load ('myGooglenet.mat', 'myGooglenet');
+        testResult(myGooglenet)
+    else
+        if exist('myVgg.mat') == 0
+            trainVgg();
+        end
+        load ('myVgg.mat', 'myVgg');
+        testResult(myVgg)
+    end
 end
 
 function zeroImds = addZeroImds(s, num)
@@ -17,18 +36,16 @@ function zeroImds = addZeroImds(s, num)
 end
 
 function img = my_translate(img)
-    randn('seed',sum(100*clock));
+    rng('default');
     r = rand(2);
     x = 10 * r(1,1) - 5;
     y = 10 * r(1,2) - 5;
     img = imtranslate(img, [x, y]);
 end
 
-function img = addGridLine(img)
+function img = addGridLine(img, r)
     %% 加格线干扰
     % 上
-    randn('seed',sum(1000*clock));
-    r = rand(4);
     margin = int16(4 * r(1,1)) + 1;
     width = int16(2 * r(1,2));
     weight = int16(140 * r(1,3)) + 100;
@@ -53,18 +70,22 @@ end
 function loadTrainData(channelNum, normal)
     %% 加载存储训练图像
     % normal=1时不加格线
-    sizeTrain = 1000;
+    sizeTrain = 2000;
     imgTrain = readMNIST(0, 'train-images.idx3-ubyte', sizeTrain);
     labelTrain = readMNIST(1, 'train-labels.idx1-ubyte', sizeTrain);
     zeroImds = addZeroImds(size(imgTrain,1), int16(sizeTrain/10));
     if normal ~= 1
-        for i = int16(1:size(imgTrain,4))
-            imgTrain(:,:,:,i) = addGridLine(imgTrain(:,:,:,i));
-            %imgTrain(:,:,:,i) = my_translate(imgTrain(:,:,:,i));
+        rng('default');
+        r = rand(4, 3, size(imgTrain,3));
+        for i = int16(1:size(imgTrain,3))
+            imgTrain(:,:,i) = addGridLine(imgTrain(:,:,i), r(:,:,i));
+            %imgTrain(:,:,i) = my_translate(imgTrain(:,:,i));
         end
-        for i = int16(1:size(zeroImds,4))
-            zeroImds(:,:,:,i) = addGridLine(zeroImds(:,:,:,i));
-            %zeroImds(:,:,:,i) = my_translate(zeroImds(:,:,:,i));
+        rng('default');
+        r = rand(4, 3, size(zeroImds,3));
+        for i = int16(1:size(zeroImds,3))
+            zeroImds(:,:,i) = addGridLine(zeroImds(:,:,i), r(:,:,i));
+            %zeroImds(:,:,i) = my_translate(zeroImds(:,:,i));
         end
     end
     imgTrain = imgTrain / 255.0;
@@ -98,19 +119,31 @@ function loadTestData(channelNum, normal)
     sizeTest = 200;
     imgTest = readMNIST(0, 't10k-images.idx3-ubyte', sizeTest);
     labelTest = readMNIST(1, 't10k-labels.idx1-ubyte', sizeTest);
+    zeroImds = addZeroImds(size(imgTest,1), int16(sizeTest/10));
     if normal ~= 1
-        for i = int16(1:size(imgTest,4))
-            imgTest(:,:,:,i) = addGridLine(imgTest(:,:,:,i));
-            %imgTest(:,:,:,i) = my_translate(imgTest(:,:,:,i));
+        rng('default');
+        r = rand(4, 3, size(imgTest,3));
+        for i = int16(1:size(imgTest,3))
+            imgTest(:,:,i) = addGridLine(imgTest(:,:,i), r(:,:,i));
+            %imgTrain(:,:,i) = my_translate(imgTrain(:,:,i));
+        end
+        rng('default');
+        r = rand(4, 3, size(zeroImds,3));
+        for i = int16(1:size(zeroImds,3))
+            zeroImds(:,:,i) = addGridLine(zeroImds(:,:,i), r(:,:,i));
+            %zeroImds(:,:,i) = my_translate(zeroImds(:,:,i));
         end
     end
     imgTest = imgTest / 255.0;
     imgTest = reshape(imgTest, size(imgTest,1), size(imgTest,2), 1, sizeTest);
+    zeroImds = zeroImds / 255.0;
+    zeroImds = reshape(zeroImds, size(zeroImds,1), size(zeroImds, 2), 1, size(zeroImds, 3));
     if channelNum == 3
         imgTest = cat(3, imgTest, imgTest, imgTest);
+        zeroImds = cat(3, zeroImds, zeroImds, zeroImds);
     end
     mkdir('test');
-    for i = 1:9
+    for i = 0:9
         mkdir('test/', num2str(i));
     end
     count = zeros(9);
@@ -120,6 +153,9 @@ function loadTestData(channelNum, normal)
         end
         imwrite(imgTest(:,:,:,i), ['test/', num2str(labelTest(i)), '/',num2str(count(labelTest(i))), '.jpg']);
         count(labelTest(i)) = count(labelTest(i)) + 1;
+    end
+    for i = int16(1:size(zeroImds,4))
+        imwrite(zeroImds(:,:,:,i), ['test/0/',num2str(i-1), '.jpg']);
     end
 end
 
@@ -132,7 +168,7 @@ function [imdsTrain, imdsValidation, numClasses] = dataPretreat(s, normal)
         'LabelSource','foldernames'); 
     [imdsTrain,imdsValidation] = splitEachLabel(imds,0.7);
     numClasses = numel(categories(imdsTrain.Labels));
-    pixelRange = [-30 30];
+    pixelRange = [-1 1];
     scaleRange = [0.9 1.1];
     imageAugmenter = imageDataAugmenter( ...
         'RandXReflection',true, ...
@@ -171,6 +207,11 @@ function trainLenet()
         'Verbose',false, ...
         'Plots','training-progress');
     net = trainNetwork(imdsTrain, layers, options);
+    
+    % 保存网络结果
+    myLenet = net;
+    save ('myLenet.mat', 'myLenet');
+    
 end
 
 
@@ -215,6 +256,9 @@ function trainGooglenet()
         'Plots','training-progress');
     net = trainNetwork(imdsTrain,lgraph,options);
 
+    % 保存网络结果
+    myGooglenet = net;
+    save ('myGooglenet.mat', 'myGooglenet');
 
     %% 结果验证
     [YPred,probs] = classify(net,augimdsValidation);
@@ -230,9 +274,6 @@ function trainGooglenet()
         title(string(label) + ", " + num2str(100*max(probs(idx(i),:)),3) + "%");
     end
 
-    % 保存网络结果
-    myGooglenet = net;
-    save ('myGooglenet.mat', 'myGooglenet');
 end
 
 
@@ -270,13 +311,24 @@ function trainVgg()
         'Plots','training-progress');
     net = trainNetwork(imdsTrain,lgraph,options);
 
+    % 保存网络结果
+    myVgg = net;
+    save ('myVgg.mat', 'myVgg');
+end
 
+
+function testResult(net)
+    net
     %% 结果验证
+    inputSize = net.Layers(1).InputSize;
     imdsTest = imageDatastore('test', ...
         'IncludeSubfolders',true, ...
         'LabelSource','foldernames'); 
     imdsTest = augmentedImageDatastore(inputSize(1:2),imdsTest);
-    [YPred,probs] = classify(net,imdsTest);
+    imdsTest
+    [YPred, probs] = classify(net,imdsTest);
+    YPred
+    probs
     accuracy = mean(YPred == imdsTest.Labels);
     accuracy
     idx = randperm(numel(imdsTest.Files),4);
@@ -288,8 +340,4 @@ function trainVgg()
         label = YPred(idx(i));
         title(string(label) + ", " + num2str(100*max(probs(idx(i),:)),3) + "%");
     end
-
-    % 保存网络结果
-    myVgg = net;
-    save ('myVgg.mat', 'myVgg');
 end
