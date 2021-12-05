@@ -1,7 +1,7 @@
 function nums = lineNotification(Im)
 clc
-%Im = imread('E:\奇奇怪怪的作业\test.jpg');
-%Im = rgb2gray(Im);
+%Im = imread('E:\奇奇怪怪的作业\tmp4.jpg');
+Im = rgb2gray(Im);
 threshold = graythresh(Im);
 bw = im2bw(Im, threshold);
 [m,n] = size(bw);
@@ -9,7 +9,6 @@ bw = edge(bw, 'canny');
 [H, theta, rho] = hough(bw, 'RhoResolution', 1.5, 'Theta', -90:0.1:89);
 p = houghpeaks(H, 20,'threshold', ceil(0.5*max(H(:))));
 lines = houghlines(bw,theta,rho,p,'FillGap',300,'MinLength',10);
-
 
 
 i = 1;
@@ -80,7 +79,7 @@ disp(xAddr)
 i1=1; i2=2;
 j1=1; j2=2;
 count = 1;
-nums = zeros;
+nums = cell(9,9);
 for k = 1 : 81
     if i1==1
         ti1 = i1;
@@ -103,7 +102,9 @@ for k = 1 : 81
         tj2 = j2 + 1;
     end
     %subplot(9,9,count), imshow(Im(xAddr(ti1)+1:xAddr(ti2)-1, yAddr(tj1)+1:yAddr(tj2)-1));
-    nums(count) = Im(xAddr(ti1)+1:xAddr(ti2)-1, yAddr(tj1)+1:yAddr(tj2)-1);
+    a = (i1+1)/2;
+    b = (j1+1)/2;
+    nums{a,b} = Im(xAddr(ti1)+1:xAddr(ti2)-1, yAddr(tj1)+1:yAddr(tj2)-1);
     j1=j1+2; j2=j2+2;
     count = count + 1;
     if j1==19
