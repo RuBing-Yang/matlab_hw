@@ -1,9 +1,9 @@
 function nums = lineNotification(Im)
 clc
-Im = imread('E:\奇奇怪怪的作业\tmp3.jpg');
-Im = rgb2gray(Im);
+%Im = imread('E:\奇奇怪怪的作业\test.jpg');
+%Im = rgb2gray(Im);
 threshold = graythresh(Im);
-bw = im2bw(Im, 0.7);
+bw = im2bw(Im, threshold);
 [m,n] = size(bw);
 bw = edge(bw, 'canny');
 [H, theta, rho] = hough(bw, 'RhoResolution', 1.5, 'Theta', -90:0.1:89);
