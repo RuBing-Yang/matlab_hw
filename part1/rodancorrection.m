@@ -1,3 +1,4 @@
+
 function img = rodancorrection()
     clear all
     close all
@@ -13,5 +14,5 @@ function img = rodancorrection()
     img = imrotate(img,angle,'bilinear','crop');
     img = imcomplement(img);
     %img = imcrop(img,[angle*n/100,angle*m/100,n-2*angle*n/100+5,m-2*angle*m/100]);
-    %figure,imshow(img);title('rodanУ��');
+    %figure,imshow(img);title('rodan');
 end
