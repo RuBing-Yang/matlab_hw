@@ -5,10 +5,13 @@ function img = rodancorrection()
     img = rgb2gray(img);
     temp = img;
     temp=edge(temp);
-    theta = 1:180;
+    theta = 1:90;
     R = radon(temp,theta);
     [~,angle] = find(R >= max(max(R)));
     angle = 90 - angle;
+    img = imcomplement(img);
     img = imrotate(img,angle,'bilinear','crop');
-    %figure,imshow(img);title('rodanÐ£Õý');
+    img = imcomplement(img);
+    %img = imcrop(img,[angle*n/100,angle*m/100,n-2*angle*n/100+5,m-2*angle*m/100]);
+    %figure,imshow(img);title('rodanÐ£ï¿½ï¿½');
 end
